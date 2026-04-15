@@ -9,9 +9,9 @@ def generate_reports(blotter, ledger, output_dir='./data'):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         
-    # 1. Export CSVs
-    blotter.to_csv(f'{output_dir}/trades.csv', index=False)
-    ledger.to_csv(f'{output_dir}/ledger.csv')
+    # 1. Export CSVs (Rounded to 2 decimal places)
+    blotter.round(2).to_csv(f'{output_dir}/trades.csv', index=False)
+    ledger.round(2).to_csv(f'{output_dir}/ledger.csv')
     
     # 2. Performance Metrics
     ledger['log_ret'] = np.log(ledger['NAV'] / ledger['NAV'].shift(1))
