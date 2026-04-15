@@ -7,6 +7,8 @@ This project implements a trend-following breakout strategy designed to capture 
 I selected the SPDR S&P 500 ETF Trust (SPY) as the primary asset for this backtest, using a two-year historical window. During the initial screening process, I evaluated various index ETFs and highly liquid large-cap equities. SPY was chosen because it provides the deepest liquidity and represents the broadest measure of US equity market momentum. While it exhibits lower absolute volatility than sector-specific or tech-heavy ETFs, its high volume ensures minimal slippage, and its price action provides a clean, macroeconomic baseline for evaluating a foundational ATR-based breakout system.
 
 ## Breakout Definition & Execution Rules
+The `run_backtest` Python function serves as the core execution engine of the strategy. It iterates through the dataset chronologically. First, it evaluates the portfolio state. If the portfolio is flat (no active position), the function checks if today's closing price is strictly greater than the highest high of the previous 20 trading days. If this condition is met, it executes a long entry. Upon entry, it dynamically calculates and logs the profit target and stop-loss levels based on the asset's Average True Range (ATR) for that specific day. If the portfolio is already holding a position, the function bypasses the entry logic and evaluates whether today's price action breached any of the predefined exit boundaries, logging the trade outcome and updating the cash balance accordingly.
+
 I define a breakout using a modified Donchian Channel framework. The primary indicator parameters and exit cutoffs are defined as follows:
 
 * **Lookback Window:** 20 days
@@ -269,18 +271,29 @@ The complete log of all executed trades, including entry/exit timestamps, pricin
 
 
 ## Trade Outcome Analysis
-Every backtested trade concludes in one of three ways: Target Hit, Stop Loss, or Timeout. Tracking the distribution of these outcomes is critical for evaluating whether the profit target is too ambitious or the stop loss is too tight. 
+Every backtested trade concludes in one of three ways: Target Hit, Stop Loss, or Timeout. The logic for these outcomes is strictly defined: a trade is stopped out for a managed loss if the price drops 1.0x ATR below the entry price. If the trade fails to hit the profit target or the stop loss within a set timeout period of 10 trading days, a time-stop is triggered, and the position is automatically closed at the current market price. Tracking the distribution of these outcomes is critical for evaluating whether the profit target is too ambitious or the stop loss is too tight.
 
 <iframe src="./data/outcome_histogram.html" width="100%" height="500px" frameborder="0"></iframe>
 
 ## Performance Metrics
-The backtest generates several key performance metrics to evaluate the viability and risk profile of the strategy:
+The table below outlines the backtested performance of the strategy.
 
-* **Annualized Return:** Measures the geometric average amount of money earned by the strategy each year over the backtested period.
-* **Annualized Volatility:** Represents the standard deviation of the portfolio's returns, indicating the level of risk and account fluctuation experienced.
-* **Sharpe Ratio:** Evaluates the risk-adjusted return. Assuming a baseline risk-free rate of 3.75%, this ratio indicates how much excess return the strategy generated per unit of volatility. A positive number indicates the strategy outperformed the risk-free asset on a risk-adjusted basis.
-* **Average Return per Trade:** The mean percentage gain or loss across all executed trades, providing insight into the expected value of an individual setup.
-* **Win Rate:** The percentage of total trades that closed with a positive return, regardless of whether they hit the absolute profit target or timed out profitably.
+| Metric | Value |
+| :--- | :--- |
+| Total Trades | 13 |
+| Win Rate | 46.15% |
+| Average Return per Trade | -0.12% |
+| Sharpe Ratio (RFR 0.0375) | -1.5319 |
+| Sortino Ratio | -1.2558 |
+| Max Drawdown | -3.52% |
+| Profit Factor | 0.77 |
+| Expectancy (Per Trade) | -0.0012 |
+
+**Metric Interpretations:**
+* **Average Return per Trade:** Indicates the mean percentage gain or loss across all executed trades. A negative value here highlights that the costs of the false breakouts outweighed the momentum captured by the successful ones.
+* **Sharpe & Sortino Ratios:** The Sharpe ratio evaluates the risk-adjusted return against a 3.75% risk-free rate. A negative Sharpe ratio indicates the strategy underperformed cash. The Sortino ratio serves a similar function but only penalizes downside volatility, providing a clearer picture of drawdowns. 
+* **Max Drawdown:** Measures the largest peak-to-trough drop in portfolio value. This quantifies the worst-case capital erosion experienced during the backtest.
+* **Profit Factor & Expectancy:** The profit factor divides gross profits by gross losses. A value below 1.0 indicates a losing system. Expectancy combines the win rate and average win/loss sizes to project the mathematical expected return of taking one additional trade under this system.
 
 <iframe src="./data/equity_curve.html" width="100%" height="600px" frameborder="0"></iframe>
 
